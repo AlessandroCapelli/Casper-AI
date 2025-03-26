@@ -1,0 +1,29 @@
+<div class="app-container">
+	<div class="chat-container" #scrollMe>
+		@for (msg of chatHistory(); track msg) {
+		<div class="message" [ngClass]="msg.sender">
+			<div class="message-content">
+				<span class="message-text">{{ msg.text }}</span>
+			</div>
+			<div class="message-timestamp">{{ msg.timestamp | date:'short' }}</div>
+		</div>
+		}
+
+		@if (isLoading()) {
+		<div class="message ai loading">
+			<div class="message-content">
+				<span class="message-text typing-indicator">AI is typing</span>
+			</div>
+		</div>
+		}
+	</div>
+
+	<form (ngSubmit)="sendMessageAsync()" class="input-area">
+		<textarea [(ngModel)]="userPrompt().text" name="message" placeholder="Type your message here..."
+			[disabled]="isLoading()" class="message-input"
+			(keydown.enter)="$event.preventDefault(); sendMessageAsync()"></textarea>
+		<button type="submit" [disabled]="isLoading() || !userPrompt().text.trim()" class="send-button">
+			<span class="button-text">Send</span>
+		</button>
+	</form>
+</div>
