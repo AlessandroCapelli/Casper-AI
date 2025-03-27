@@ -30,7 +30,7 @@ export class AppComponent {
 		this.chatHistory.update(history => [...history, this.userPrompt()]);
 
 		try {
-			const response = await this.service.sendMessageAsync(this.userPrompt().text.trim(), this.chatHistory());
+			const response = await this.service.sendMessageAsync(this.userPrompt().text.trim(), []); // TODO: add history
 			this.chatHistory.update(history => [...history, {
 				sender: 'ai',
 				text: response.reply,

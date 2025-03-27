@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { environment } from '../../environment';
 
 export interface ChatMessage {
 	sender: 'user' | 'ai' | 'error';
@@ -10,7 +11,7 @@ export interface ChatResponse {
 	reply: string;
 }
 
-const API_URL = 'http://localhost:5000/chat';
+const API_URL = `${environment.apiUrl}/chat`;
 
 @Injectable({ providedIn: 'root' })
 export class Service {
