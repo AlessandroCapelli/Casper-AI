@@ -30,7 +30,7 @@ export class AppComponent {
 		this.chatHistory.update(history => [...history, this.userPrompt()]);
 
 		try {
-			const response = await this.service.sendMessageAsync(this.userPrompt().text.trim(), this.chatHistory());
+			const response = await this.service.sendMessageAsync(this.chatHistory());
 			this.chatHistory.update(history => [...history, {
 				sender: 'Assistant',
 				text: response.reply,
@@ -49,5 +49,11 @@ export class AppComponent {
 
 			this.scrollContainer.nativeElement.scrollTop = this.scrollContainer.nativeElement.scrollHeight;
 		}
+	}
+
+	protected clearChat(): void {
+		this.chatHistory.set([]);
+		localStorage.removeItem('chatHistory');
+		this.userPrompt.set({ sender: 'User', text: '', timestamp: new Date() });
 	}
 }

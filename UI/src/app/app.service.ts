@@ -15,12 +15,12 @@ const API_URL = `${environment.apiUrl}/chat`;
 
 @Injectable({ providedIn: 'root' })
 export class Service {
-	public async sendMessageAsync(userMessage: string, history: ChatMessage[]): Promise<ChatResponse> {
+	public async sendMessageAsync(history: ChatMessage[]): Promise<ChatResponse> {
 		try {
 			const response = await fetch(API_URL, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ message: userMessage, history: history })
+				body: JSON.stringify({ history: history })
 			});
 
 			if (!response.ok)

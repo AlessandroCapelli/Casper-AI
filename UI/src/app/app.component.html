@@ -25,5 +25,9 @@
 		<button type="submit" [disabled]="isLoading() || !userPrompt().text.trim()" class="send-button">
 			<span class="button-text">Send</span>
 		</button>
+		<button type="button" (click)="clearChat()" [disabled]="isLoading() || chatHistory().length === 0"
+			class="clear-button">
+			<span class="button-text">Clear</span>
+		</button>
 	</form>
 </div>

@@ -38,8 +38,15 @@ class LLaMAModel:
         return inputs
 
     def generate_text(self, prompt: str, system_message: str = "You are a helpful assistant. Provide brief, direct answers, prepared and formatted for a chat interface.") -> str:
-        formatted_prompt = f"{system_message}\n\n{prompt}"
-        logger.info(f"Model input:\n\n{formatted_prompt}\n\n")
+        if system_message not in prompt:
+            formatted_prompt = f"{system_message}\n\n{prompt}"
+        else:
+            formatted_prompt = prompt
+
+        logger.info(f"--------- START MODEL INPUT ---------")
+        logger.info(f"{formatted_prompt}")
+        logger.info(f"---------- END MODEL INPUT ----------")
+		
         inputs = self._prepare_inputs(formatted_prompt)
         
         gen_config = GenerationConfig(
@@ -60,11 +67,7 @@ class LLaMAModel:
             output_ids = self.model.generate(**inputs, generation_config=gen_config)
         
         decoded = self.tokenizer.decode(output_ids[0], skip_special_tokens=True)
-        
         response = decoded[len(formatted_prompt):].strip()
-        
-        if "User:" in response:
-            response = response.split("User:")[0].strip()
         
         return response.strip()
 
@@ -72,16 +75,8 @@ class LLaMAModel:
         return self.model.state_dict()
 
     def save(self, path: str) -> None:
-        try:
-            torch.save(self.state_dict(), path)
-            logger.info(f"Model saved at {path}")
-        except Exception as e:
-            logger.error("Error saving model", exc_info=e)
+        torch.save(self.state_dict(), path)
 
     def load(self, path: str) -> None:
-        try:
-            state = torch.load(path, map_location=self.device)
-            self.model.load_state_dict(state)
-            logger.info(f"Loaded model state from {path}")
-        except Exception as e:
-            logger.error("Error loading model state", exc_info=e)
+        state = torch.load(path, map_location=self.device)
+        self.model.load_state_dict(state)

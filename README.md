@@ -127,4 +127,3 @@ The following features and improvements are planned for future development:
 - **UI Improvements**: Enhance the user interface for better usability
 - **Input Enrichment and Fine-tuning**: Improve input handling and fine-tuning for the model
 - **Correct Input Format Creation**: Ensure the model input is created in the correct format
-- **Clear Chat Button**: Add a button to clear the chat history and start fresh conversations
