@@ -110,11 +110,21 @@ The following features and improvements are planned for future development:
 - **Markdown Support**: Implement markdown rendering for chat messages
 - **Enhanced Formatting**: Improve the visual presentation and formatting of the chat interface
 - **Model Fine-tuning**: Expand the fine-tuning capabilities with additional parameters and datasets
-- **RAG Integration**: Add Retrieval-Augmented Generation to enhance response quality with external knowledge
+- **RAG Integration**: 
+  - Add Retrieval-Augmented Generation to enhance response quality with external knowledge
+  - Include support for an embedding distance graph
 - **Automatic Message Scrolling**: Implement smooth automatic scrolling for new messages
 - **Chat History Support**: Enable the model to reference previous conversations for context
 - **Performance Optimizations**: Improve inference speed and memory usage
 - **Multi-Model Support**: Add capability to switch between different model architectures
 - **Export/Import Functionality**: Allow saving and loading of chat sessions
 - **User Authentication**: Implement secure login and user profiles
+- **Account Management**: Add features for account management, including login and logout
+- **Preferences Management**: Implement user preferences for a personalized experience
+- **Support for Thinking Models**: Integrate support for various thinking models
+- **Hugging Face Model Support**: Enhance existing support for Hugging Face models and add support for local models
+- **Hyperparameter Management**: Consolidate all hyperparameters in a single location for easier management
+- **UI Improvements**: Enhance the user interface for better usability
+- **Input Enrichment and Fine-tuning**: Improve input handling and fine-tuning for the model
+- **Correct Input Format Creation**: Ensure the model input is created in the correct format
 - **Clear Chat Button**: Add a button to clear the chat history and start fresh conversations
