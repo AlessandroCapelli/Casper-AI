@@ -87,11 +87,11 @@ Casper AI is designed to be a flexible and extensible platform for LLM research 
    ```
 2. Install Node.js dependencies:
    ```bash
-   npm install
+   yarn install
    ```
 3. Start the development server:
    ```bash
-   npm start
+   yarn start
    ```
    The frontend will run on `http://localhost:4200`
 

@@ -3,7 +3,7 @@
 	"version": 1,
 	"newProjectRoot": "projects",
 	"projects": {
-		"chat-app": {
+		"ui": {
 			"projectType": "application",
 			"schematics": {},
 			"root": "",
@@ -13,7 +13,7 @@
 				"build": {
 					"builder": "@angular-devkit/build-angular:application",
 					"options": {
-						"outputPath": "dist/chat-app",
+						"outputPath": "dist/ui",
 						"index": "src/index.html",
 						"browser": "src/main.ts",
 						"polyfills": [
@@ -23,7 +23,13 @@
 						"assets": [
 							{
 								"glob": "**/*",
-								"input": "public"
+								"input": "src/assets",
+								"output": "assets"
+							},
+							{
+								"glob": "**/*",
+								"input": "public",
+								"output": ""
 							}
 						],
 						"styles": [],
@@ -58,18 +64,32 @@
 					"builder": "@angular-devkit/build-angular:dev-server",
 					"configurations": {
 						"production": {
-							"buildTarget": "chat-app:build:production"
+							"buildTarget": "ui:build:production"
 						},
 						"development": {
-							"buildTarget": "chat-app:build:development"
+							"buildTarget": "ui:build:development"
 						}
 					},
 					"defaultConfiguration": "development"
 				},
 				"extract-i18n": {
 					"builder": "@angular-devkit/build-angular:extract-i18n"
+				},
+				"lint": {
+					"builder": "@angular-eslint/builder:lint",
+					"options": {
+						"lintFilePatterns": [
+							"src/**/*.ts",
+							"src/**/*.html"
+						]
+					}
 				}
 			}
 		}
+	},
+	"cli": {
+		"schematicCollections": [
+			"@angular-eslint/schematics"
+		]
 	}
 }

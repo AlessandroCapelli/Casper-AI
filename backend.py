@@ -6,8 +6,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from model import LLaMAConfig, LLaMAModel
 
-# Configuration
-MODEL_SAVE_PATH = os.getenv('MODEL_SAVE_PATH', 'model.pth')
+MODEL_SAVE_PATH = os.getenv('MODEL_SAVE_PATH', 'Utils/model.pth')
 SAVE_MODEL = os.getenv('SAVE_MODEL', 'False').lower() in ('true', '1', 'yes')
 CORS_ORIGINS = os.getenv('CORS_ORIGINS', 'http://localhost:4200')
 PORT = int(os.getenv('PORT', 5000))
@@ -16,11 +15,9 @@ DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 'yes')
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize model — ora usiamo distilgpt2
 config = LLaMAConfig()
 model = LLaMAModel(config)
 
-# Aggiorniamo tokenizer per gestire correttamente il pad_token
 model.tokenizer.pad_token = model.tokenizer.eos_token
 
 if os.path.exists(MODEL_SAVE_PATH):
@@ -37,7 +34,6 @@ else:
     except Exception as e:
         logger.error(f"Error saving initial model: {e}", exc_info=True)
 
-# Flask app
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": CORS_ORIGINS}})
 
