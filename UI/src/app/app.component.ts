@@ -2,11 +2,14 @@ import { CommonModule } from '@angular/common';
 import { Component, signal, ViewChild, ElementRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ChatMessage, Service } from './app.service';
+import { Pipe, PipeTransform } from '@angular/core';
+import { forwardRef } from "@angular/core";
+import { marked } from 'marked';
 
 @Component({
 	selector: 'app-root',
 	standalone: true,
-	imports: [CommonModule, FormsModule],
+	imports: [CommonModule, FormsModule, forwardRef(() => MarkdownPipe)],
 	templateUrl: './app.component.html',
 	styleUrl: './app.component.css'
 })
@@ -55,5 +58,19 @@ export class AppComponent {
 		this.chatHistory.set([]);
 		localStorage.removeItem('chatHistory');
 		this.userPrompt.set({ sender: 'User', text: '', timestamp: new Date() });
+	}
+}
+
+@Pipe({
+	name: 'markdown'
+})
+export class MarkdownPipe implements PipeTransform {
+	public transform(value: string): string {
+		marked.setOptions({
+			gfm: true,
+			breaks: true,
+		});
+
+		return marked(value) as string;
 	}
 }

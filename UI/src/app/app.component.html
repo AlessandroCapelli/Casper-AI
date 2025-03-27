@@ -3,7 +3,8 @@
 		@for (msg of chatHistory(); track msg) {
 		<div class="message" [ngClass]="msg.sender">
 			<div class="message-content">
-				<span class="message-text">{{ msg.text }}</span>
+				<span class="message-text"
+					[innerHTML]="msg.sender === 'Assistant' ? (msg.text | markdown) : msg.text"></span>
 			</div>
 			<div class="message-timestamp">{{ msg.timestamp | date:'short' }}</div>
 		</div>
