@@ -1,6 +1,6 @@
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -11,7 +11,7 @@ MODEL_SAVE_PATH = os.getenv('MODEL_SAVE_PATH', 'model.pth')
 SAVE_MODEL = os.getenv('SAVE_MODEL', 'False').lower() in ('true', '1', 'yes')
 CORS_ORIGINS = os.getenv('CORS_ORIGINS', 'http://localhost:4200')
 PORT = int(os.getenv('PORT', 5000))
-DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
+DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 'yes')
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -51,7 +51,7 @@ def chat() -> tuple:
         if not user_msg:
             return jsonify({'error': 'Empty message'}), 400
 
-        prompt = "".join(f"{m['sender']}: {m['text']}\n" for m in history) + f"User: {user_msg}\nAssistant:"
+        prompt = "".join(f"{m['sender']}: {m['text']}\n" for m in history if m['sender'] != 'Error') + f"{user_msg}\nAssistant:"
         response = model.generate_text(prompt)
 
         if SAVE_MODEL:
@@ -63,7 +63,7 @@ def chat() -> tuple:
 
         return jsonify({
             'reply': response,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc)
         }), 200
 
     except Exception as e:

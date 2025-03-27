@@ -102,3 +102,19 @@ Casper AI is designed to be a flexible and extensible platform for LLM research 
 3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
+
+## 📝 TODO List
+
+The following features and improvements are planned for future development:
+
+- **Markdown Support**: Implement markdown rendering for chat messages
+- **Enhanced Formatting**: Improve the visual presentation and formatting of the chat interface
+- **Model Fine-tuning**: Expand the fine-tuning capabilities with additional parameters and datasets
+- **RAG Integration**: Add Retrieval-Augmented Generation to enhance response quality with external knowledge
+- **Automatic Message Scrolling**: Implement smooth automatic scrolling for new messages
+- **Chat History Support**: Enable the model to reference previous conversations for context
+- **Performance Optimizations**: Improve inference speed and memory usage
+- **Multi-Model Support**: Add capability to switch between different model architectures
+- **Export/Import Functionality**: Allow saving and loading of chat sessions
+- **User Authentication**: Implement secure login and user profiles
+- **Clear Chat Button**: Add a button to clear the chat history and start fresh conversations

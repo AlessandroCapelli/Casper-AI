@@ -14,7 +14,7 @@ export class AppComponent {
 	@ViewChild('scrollMe') private scrollContainer!: ElementRef;
 
 	protected readonly chatHistory = signal<ChatMessage[]>([]);
-	protected readonly userPrompt = signal<ChatMessage>({ sender: 'user', text: '', timestamp: new Date() });
+	protected readonly userPrompt = signal<ChatMessage>({ sender: 'User', text: '', timestamp: new Date() });
 	protected readonly isLoading = signal(false);
 
 	constructor(private readonly service: Service) {
@@ -30,21 +30,21 @@ export class AppComponent {
 		this.chatHistory.update(history => [...history, this.userPrompt()]);
 
 		try {
-			const response = await this.service.sendMessageAsync(this.userPrompt().text.trim(), []); // TODO: add history
+			const response = await this.service.sendMessageAsync(this.userPrompt().text.trim(), this.chatHistory());
 			this.chatHistory.update(history => [...history, {
-				sender: 'ai',
+				sender: 'Assistant',
 				text: response.reply,
 				timestamp: new Date()
 			}]);
 		} catch (error) {
 			this.chatHistory.update(history => [...history, {
-				sender: 'error',
+				sender: 'Error',
 				text: (error as Error).message,
 				timestamp: new Date()
 			}]);
 		} finally {
 			localStorage.setItem('chatHistory', JSON.stringify(this.chatHistory()));
-			this.userPrompt.set({ sender: 'user', text: '', timestamp: new Date() });
+			this.userPrompt.set({ sender: 'User', text: '', timestamp: new Date() });
 			this.isLoading.set(false);
 
 			this.scrollContainer.nativeElement.scrollTop = this.scrollContainer.nativeElement.scrollHeight;

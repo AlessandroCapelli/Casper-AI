@@ -51,11 +51,11 @@
   gap: 0.25rem;
 }
 
-.message.user {
+.message.User {
   align-self: flex-end;
 }
 
-.message.ai {
+.message.Assistant {
   align-self: flex-start;
 }
 
@@ -67,13 +67,13 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-.message.user .message-content {
+.message.User .message-content {
   background: #2b579a;
   color: #fff;
   border-bottom-right-radius: 0.25rem;
 }
 
-.message.ai .message-content {
+.message.Assistant .message-content {
   background: #2d2d2d;
   border-bottom-left-radius: 0.25rem;
 }
@@ -177,13 +177,13 @@
   opacity: 0.7;
 }
 
-.message.error {
+.message.Error {
   align-self: center;
   max-width: 90%;
   margin: 0.5rem 0;
 }
 
-.message.error .message-content {
+.message.Error .message-content {
   background: linear-gradient(135deg, #d32f2f 0%, #f44336 100%);
   color: #fff;
   border-radius: 1rem;
@@ -196,13 +196,13 @@
   justify-content: center;
 }
 
-.message.error .message-timestamp {
+.message.Error .message-timestamp {
   color: #f44336;
   text-align: center;
   margin-top: 0.25rem;
 }
 
-.message.error .message-text {
+.message.Error .message-text {
   display: block;
   font-size: 0.95rem;
   line-height: 1.5;

@@ -7,9 +7,9 @@
 /bazel-out
 
 # Node
-/node_modules
-npm-debug.log
-yarn-error.log
+/UI/node_modules
+/UI/npm-debug.log
+/UI/yarn-error.log
 
 # IDEs and editors
 .idea/
@@ -29,14 +29,17 @@ yarn-error.log
 .history/*
 
 # Miscellaneous
-/.angular/cache
-.sass-cache/
-/connect.lock
-/coverage
-/libpeerconnection.log
-testem.log
-/typings
+/UI/.angular/cache
+/UI/.sass-cache/
+/UI/connect.lock
+/UI/coverage
+/UI/libpeerconnection.log
+/UI/testem.log
+/UI/typings
 
 # System files
 .DS_Store
 Thumbs.db
+
+# Model files
+model.pth

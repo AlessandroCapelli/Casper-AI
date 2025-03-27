@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { environment } from '../../environment';
 
 export interface ChatMessage {
-	sender: 'user' | 'ai' | 'error';
+	sender: 'User' | 'Assistant' | 'Error';
 	text: string;
 	timestamp: Date;
 }
