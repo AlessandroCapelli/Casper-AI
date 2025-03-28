@@ -1,9 +1,3 @@
 export const environment = {
-	production: false,
-	get apiUrl(): string {
-		const protocol = window.location.protocol;
-		const hostname = window.location.hostname;
-
-		return `${protocol}//${hostname}:5000`;
-	}
+	apiUrl: 'http://172.20.10.4:5000'
 };

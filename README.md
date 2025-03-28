@@ -127,3 +127,4 @@ The following features and improvements are planned for future development:
 - **UI Improvements**: Enhance the user interface for better usability
 - **Input Enrichment and Fine-tuning**: Improve input handling and fine-tuning for the model
 - **Correct Input Format Creation**: Ensure the model input is created in the correct format
+- **Use better base LLM**: google/gemma-3-27b-it Q4
