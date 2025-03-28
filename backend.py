@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from model import LLMConfig, LLMModel
 
-MODEL_PATH = 'Utils/model.pth'
+MODEL_PATH = 'Model'
 CORS_ORIGINS = 'http://localhost:4200'
 PORT = 5000
 DEBUG = True
@@ -17,17 +17,17 @@ logger = logging.getLogger(__name__)
 model = LLMModel(LLMConfig())
 
 if os.path.exists(MODEL_PATH):
-	try:
-		model.load(MODEL_PATH)
-		logger.info(f"Successfully loaded model from {MODEL_PATH}")
-	except Exception as e:
-		logger.error(f"Error loading model: {e}", exc_info=True)
+    try:
+        model.load(MODEL_PATH)
+        logger.info(f"Successfully loaded model from {MODEL_PATH}")
+    except Exception as e:
+        logger.error(f"Error loading model: {e}", exc_info=True)
 else:
-	try:
-		model.save(MODEL_PATH)
-		logger.info(f"Initial model saved to {MODEL_PATH}")
-	except Exception as e:
-		logger.error(f"Error saving initial model: {e}", exc_info=True)
+    try:
+        model.save(MODEL_PATH)
+        logger.info(f"Initial model saved to {MODEL_PATH}")
+    except Exception as e:
+        logger.error(f"Error saving initial model: {e}", exc_info=True)
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": CORS_ORIGINS}})
@@ -53,4 +53,4 @@ def chat() -> tuple:
         return jsonify({'error': 'Internal server error'}), 500
 
 if __name__ == '__main__':
-	app.run(host='0.0.0.0', port=PORT, debug=DEBUG)
+    app.run(host='0.0.0.0', port=PORT, debug=DEBUG)

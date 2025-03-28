@@ -35,7 +35,7 @@ class LLMConfig:
         self,
         model_name: str = "HuggingFaceTB/SmolLM-135M-Instruct",
         system_message: str = "You are a helpful assistant. Provide brief, direct answers in a chat interface.",
-        max_length: int = 128,
+        max_length: int = 128, # Prompt + Output
         min_length: int = 8,
         temperature: float = 0.7,
         top_k: int = 50,
@@ -93,6 +93,7 @@ class LLMModel:
 
         # Load the tokenizer with a fast implementation if available
         self.tokenizer = AutoTokenizer.from_pretrained(config.model_name, use_fast=True, add_prefix_space=True)
+        self.tokenizer.truncation_side = "left"
 
         # Load the model configuration, assuming a decoder-only (causal) architecture
         model_config = AutoConfig.from_pretrained(config.model_name, is_decoder=True)
@@ -143,9 +144,6 @@ class LLMModel:
         else:
             formatted_prompt = prompt
 
-        # Log the input that will be fed into the model
-        # logger.info(f"\n--------- MODEL INPUT START ---------\n{formatted_prompt}\n---------- MODEL INPUT END ----------\n")
-
         # Prepare the tokenized inputs using the cached method
         inputs = self._prepare_inputs(formatted_prompt)
 
@@ -158,10 +156,10 @@ class LLMModel:
             do_sample=True if self.config.temperature > 0 else False,
             pad_token_id=self.tokenizer.eos_token_id,  # Use EOS token for padding
             min_length=self.config.min_length,
-            max_length=self.config.max_length,
+            max_length=inputs["input_ids"].shape[-1] + self.config.max_new_tokens,
             no_repeat_ngram_size=self.config.no_repeat_ngram_size,
-			num_beams=3,
-			early_stopping=True,
+            num_beams=3,
+            early_stopping=True,
         )
 
         # Generate text in inference mode (without gradient computation)
@@ -177,8 +175,8 @@ class LLMModel:
     def finetune(
         self,
         train_dataset,
-		val_dataset,
-        output_dir: str = "./model",
+        val_dataset,
+        output_dir: str = "./Model/Finetuned",
         epochs: int = 10,
         batch_size: int = 8,
         learning_rate: float = 1e-3,
@@ -196,7 +194,7 @@ class LLMModel:
         Args:
             train_dataset: A dataset object (e.g., a Hugging Face Dataset or PyTorch Dataset)
                            containing the training examples.
-			val_dataset: A dataset object (e.g., a Hugging Face Dataset or PyTorch Dataset)
+            val_dataset: A dataset object (e.g., a Hugging Face Dataset or PyTorch Dataset)
                            containing the validation examples.
             output_dir (str): Directory path where the fine-tuned model and logs will be saved.
             epochs (int): Number of training epochs.
@@ -213,10 +211,6 @@ class LLMModel:
 
         if "input_ids" not in val_dataset.features:
             val_dataset = val_dataset.map(self.tokenize_function, batched=True, remove_columns=["text"])
-
-		# Print the model architecture
-        # for name, module in self.model.named_modules():
-        #     print(name)
 
         lora_config = LoraConfig(
             task_type="CAUSAL_LM",
@@ -249,7 +243,7 @@ class LLMModel:
             model=self.model,
             args=training_args,
             train_dataset=train_dataset,
-			eval_dataset=val_dataset,
+            eval_dataset=val_dataset,
             processing_class=self.tokenizer,
             data_collator=DataCollatorWithPadding(tokenizer=self.tokenizer),
         )
@@ -257,9 +251,7 @@ class LLMModel:
         # Execute the fine-tuning process
         trainer.train()
 
-        # Save the fine-tuned model and tokenizer to the specified directory
-        self.model.save_pretrained(output_dir)
-        self.tokenizer.save_pretrained(output_dir)
+        self.save(output_dir)
 
     def tokenize_function(self, examples: dict, max_length: int = 512) -> dict:
         """
@@ -274,7 +266,6 @@ class LLMModel:
         Returns:
             dict: A dictionary containing tokenized outputs.
         """
-        # Tokenize the text without returning tensors (let the data collator handle that later)
         if not all(isinstance(item, str) for item in examples["text"]):
             raise ValueError("The 'text' field must be a list of strings.")
     
@@ -288,43 +279,38 @@ class LLMModel:
 
         return tokenized_inputs
 
-    def state_dict(self) -> Dict[str, torch.Tensor]:
-        """
-        Retrieve the current state dictionary of the model.
-
-        Returns:
-            Dict[str, torch.Tensor]: A dictionary containing the model's parameters.
-        """
-        return self.model.state_dict()
-
     def save(self, path: str) -> None:
         """
-        Save the current model state to a file.
-
+        Save the complete model state (model, tokenizer, and configuration) to a directory.
+        
         Args:
-            path (str): The file path where the model state will be saved.
+            path (str): Directory path where the model and tokenizer will be saved.
         """
-        torch.save(self.state_dict(), path)
+        self.model.save_pretrained(path)
+        self.tokenizer.save_pretrained(path)
 
     def load(self, path: str) -> None:
         """
-        Load a model state from a file.
-
+        Load the complete model state (model, tokenizer, and configuration) from a directory.
+        
         Args:
-            path (str): The file path from which the model state will be loaded.
+            path (str): Directory path from which the model and tokenizer will be loaded.
         """
-        state = torch.load(path, map_location=self.device)
-        self.model.load_state_dict(state)
+        self.tokenizer = AutoTokenizer.from_pretrained(path)
+        config = AutoConfig.from_pretrained(path)
+        self.model = AutoModelForCausalLM.from_pretrained(path, config=config).to(self.config.device)
+        self.tokenizer.truncation_side = "left"
+        self.model.eval()
 
 if __name__ == "__main__":
-	model = LLMModel(LLMConfig())
+    model = LLMModel(LLMConfig())
 
-	# Fine-tune the model
-	train_dataset = Dataset.from_list([{"text": text} for text in ['Ciao a tutti']])
-	val_dataset = Dataset.from_list([{"text": text} for text in ['How are you?']])
+    # Fine-tune the model
+    train_dataset = Dataset.from_list([{"text": text} for text in ['Example']])
+    val_dataset = Dataset.from_list([{"text": text} for text in ['Example']])
 
-	if (len(train_dataset) > 0 and len(val_dataset) > 0):
-		model.finetune(train_dataset, val_dataset, epochs=1)
+    if len(train_dataset) > 0 and len(val_dataset) > 0:
+        model.finetune(train_dataset, val_dataset, epochs=1)
 
-	for prompt in val_dataset:
-		print("Input: ", prompt["text"], "\nPrediction:", model.generate_text(prompt["text"]))
+    for prompt in val_dataset:
+        print("Input: ", prompt["text"], "\nPrediction:", model.generate_text(prompt["text"]))
