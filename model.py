@@ -16,7 +16,7 @@ from functools import lru_cache
 from typing import Optional, Dict
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig, GenerationConfig, Trainer, TrainingArguments, DataCollatorWithPadding
-from peft import get_peft_model, LoraConfig
+from peft import get_peft_model, LoraConfig, PeftModel
 from datasets import Dataset
 
 # Configure logging to display info level messages
@@ -176,7 +176,7 @@ class LLMModel:
         self,
         train_dataset,
         val_dataset,
-        output_dir: str = "./Model/Finetuned",
+        output_dir: str = "./Model",
         epochs: int = 10,
         batch_size: int = 8,
         learning_rate: float = 1e-3,
@@ -184,6 +184,13 @@ class LLMModel:
         eval_strategy: str = "epoch",
         save_strategy: str = "epoch",
         logging_steps: int = 500,
+        lora_config: LoraConfig = LoraConfig(
+            task_type="CAUSAL_LM",
+            r=4,
+            lora_alpha=32,
+            lora_dropout=0.01,
+            target_modules=["q_proj"]
+        ),
     ):
         """
         Fine-tune the base model on a provided training dataset.
@@ -212,13 +219,6 @@ class LLMModel:
         if "input_ids" not in val_dataset.features:
             val_dataset = val_dataset.map(self.tokenize_function, batched=True, remove_columns=["text"])
 
-        lora_config = LoraConfig(
-            task_type="CAUSAL_LM",
-            r=4,
-            lora_alpha=32,
-            lora_dropout=0.01,
-            target_modules=["q_proj"]
-        )
         self.model = get_peft_model(self.model, lora_config)
         self.model.print_trainable_parameters()
 
@@ -251,7 +251,7 @@ class LLMModel:
         # Execute the fine-tuning process
         trainer.train()
 
-        self.save(output_dir)
+        self.save(output_dir, finetuned=True)
 
     def tokenize_function(self, examples: dict, max_length: int = 512) -> dict:
         """
@@ -279,7 +279,7 @@ class LLMModel:
 
         return tokenized_inputs
 
-    def save(self, path: str) -> None:
+    def save(self, path: str, finetuned: bool = False) -> None:
         """
         Save the complete model state (model, tokenizer, and configuration) to a directory.
         
@@ -288,19 +288,29 @@ class LLMModel:
         """
         self.model.save_pretrained(path)
         self.tokenizer.save_pretrained(path)
+        logger.info(f"Model saved to {path}: {self.config.model_name}" + (" [FINETUNED]" if finetuned else ""))
 
-    def load(self, path: str) -> None:
+    def load(self, path: str, finetuned: bool = False) -> None:
         """
         Load the complete model state (model, tokenizer, and configuration) from a directory.
         
         Args:
             path (str): Directory path from which the model and tokenizer will be loaded.
+            finetuned (bool): Whether the model is finetuned or not.
         """
         self.tokenizer = AutoTokenizer.from_pretrained(path)
         config = AutoConfig.from_pretrained(path)
-        self.model = AutoModelForCausalLM.from_pretrained(path, config=config).to(self.config.device)
+        
+        if finetuned:
+            base_model_name = getattr(config, "base_model_name_or_path", self.config.model_name)
+            base_model = AutoModelForCausalLM.from_pretrained(base_model_name, config=config).to(self.config.device)
+            self.model = PeftModel.from_pretrained(base_model, path)
+        else:
+            self.model = AutoModelForCausalLM.from_pretrained(path, config=config).to(self.config.device)
+            
         self.tokenizer.truncation_side = "left"
         self.model.eval()
+        logger.info(f"Model loaded from {path}: {self.config.model_name}" + (" [FINETUNED]" if finetuned else ""))
 
 if __name__ == "__main__":
     model = LLMModel(LLMConfig())
@@ -311,6 +321,5 @@ if __name__ == "__main__":
 
     if len(train_dataset) > 0 and len(val_dataset) > 0:
         model.finetune(train_dataset, val_dataset, epochs=1)
-
-    for prompt in val_dataset:
-        print("Input: ", prompt["text"], "\nPrediction:", model.generate_text(prompt["text"]))
+    
+    model.load("./Model", finetuned=True)

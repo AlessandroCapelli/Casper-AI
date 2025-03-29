@@ -19,15 +19,13 @@ model = LLMModel(LLMConfig())
 if os.path.exists(MODEL_PATH):
     try:
         model.load(MODEL_PATH)
-        logger.info(f"Successfully loaded model from {MODEL_PATH}")
     except Exception as e:
         logger.error(f"Error loading model: {e}", exc_info=True)
 else:
     try:
         model.save(MODEL_PATH)
-        logger.info(f"Initial model saved to {MODEL_PATH}")
     except Exception as e:
-        logger.error(f"Error saving initial model: {e}", exc_info=True)
+        logger.error(f"Error saving model: {e}", exc_info=True)
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": CORS_ORIGINS}})
