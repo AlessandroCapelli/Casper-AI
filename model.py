@@ -11,9 +11,10 @@ This module provides a generic framework for:
 Reference: Hugging Face Transformers Documentation - https://huggingface.co/docs/transformers/
 """
 
+import json
 import logging
 from functools import lru_cache
-from typing import Optional, Dict
+from typing import Dict
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig, GenerationConfig, Trainer, TrainingArguments, DataCollatorWithPadding
 from peft import get_peft_model, LoraConfig, PeftModel
@@ -23,6 +24,14 @@ from datasets import Dataset
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
+def load_json_config(file_path: str) -> dict:
+    """Load the JSON configuration file."""
+    with open(file_path, "r") as f:
+        config = json.load(f)
+    return config
+
+
 class LLMConfig:
     """
     Generic configuration class for an LLM experimental lab.
@@ -31,45 +40,36 @@ class LLMConfig:
     It enables customization of the base model, generation limits, sampling parameters,
     and device settings.
     """
-    def __init__(
-        self,
-        model_name: str = "HuggingFaceTB/SmolLM-135M-Instruct",
-        system_message: str = "You are a helpful assistant. Provide brief, direct answers in a chat interface.",
-        max_length: int = 128, # Prompt + Output
-        min_length: int = 8,
-        temperature: float = 0.7,
-        top_k: int = 50,
-        top_p: float = 0.9,
-        no_repeat_ngram_size: int = 3,
-        max_new_tokens: int = 64,
-        device: Optional[str] = None,
-    ):
-        """
-        Initialize LLM configuration parameters.
+    def __init__(self, config: dict):
+        self.model_name = config.get("model_name")
+        self.system_message = config.get("system_message")
+        self.max_length = config.get("max_length")
+        self.min_length = config.get("min_length")
+        self.temperature = config.get("temperature")
+        self.top_k = config.get("top_k")
+        self.top_p = config.get("top_p")
+        self.no_repeat_ngram_size = config.get("no_repeat_ngram_size")
+        self.max_new_tokens = config.get("max_new_tokens")
+        self.device = config.get("device") or ("cuda" if torch.cuda.is_available() else "cpu")
+        self.model_path = config.get("model_path")
+        self.finetune = config.get("finetune_config")
 
-        Args:
-            model_name (str): Identifier for the base pre-trained model.
-            system_message (str): A guiding system message for model behavior.
-            max_length (int): Maximum total length (prompt + generated tokens).
-            min_length (int): Minimum length of the generated sequence.
-            temperature (float): Sampling temperature to control randomness.
-            top_k (int): Number of highest probability tokens to consider for top-k sampling.
-            top_p (float): Cumulative probability threshold for nucleus sampling.
-            no_repeat_ngram_size (int): Prevents the repetition of n-grams of this size.
-            max_new_tokens (int): Maximum number of tokens to generate.
-            device (Optional[str]): Device to run the model on ('cuda' or 'cpu').
-                                    If None, it automatically selects based on availability.
-        """
-        self.model_name = model_name
-        self.system_message = system_message
-        self.max_length = max_length
-        self.min_length = min_length
-        self.max_new_tokens = max_new_tokens
-        self.temperature = temperature
-        self.top_k = top_k
-        self.top_p = top_p
-        self.no_repeat_ngram_size = no_repeat_ngram_size
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        self.finetune_epochs = self.finetune.get("epochs")
+        self.finetune_batch_size = self.finetune.get("batch_size")
+        self.finetune_learning_rate = self.finetune.get("learning_rate")
+        self.finetune_weight_decay = self.finetune.get("weight_decay")
+        self.finetune_eval_strategy = self.finetune.get("eval_strategy")
+        self.finetune_save_strategy = self.finetune.get("save_strategy")
+        self.finetune_logging_steps = self.finetune.get("logging_steps")
+        self.finetune_lora = self.finetune.get("lora_config")
+
+        self.finetune_lora_config = LoraConfig(
+            task_type = self.finetune_lora.get("task_type"),
+            r = self.finetune_lora.get("r"),
+            lora_alpha = self.finetune_lora.get("lora_alpha"),
+            lora_dropout = self.finetune_lora.get("lora_dropout"),
+            target_modules = self.finetune_lora.get("target_modules")
+        )
 
 class LLMModel:
     """
@@ -159,7 +159,7 @@ class LLMModel:
             max_length=inputs["input_ids"].shape[-1] + self.config.max_new_tokens,
             no_repeat_ngram_size=self.config.no_repeat_ngram_size,
             num_beams=3,
-            early_stopping=True,
+            early_stopping=True
         )
 
         # Generate text in inference mode (without gradient computation)
@@ -171,87 +171,6 @@ class LLMModel:
         response = decoded[len(formatted_prompt):].strip()
 
         return response.strip()
-
-    def finetune(
-        self,
-        train_dataset,
-        val_dataset,
-        output_dir: str = "./Model",
-        epochs: int = 10,
-        batch_size: int = 8,
-        learning_rate: float = 1e-3,
-        weight_decay: float = 0.01,
-        eval_strategy: str = "epoch",
-        save_strategy: str = "epoch",
-        logging_steps: int = 500,
-        lora_config: LoraConfig = LoraConfig(
-            task_type="CAUSAL_LM",
-            r=4,
-            lora_alpha=32,
-            lora_dropout=0.01,
-            target_modules=["q_proj"]
-        ),
-    ):
-        """
-        Fine-tune the base model on a provided training dataset.
-
-        This method leverages Hugging Face's Trainer API to perform fine-tuning.
-        After training, the fine-tuned model and tokenizer are saved to the specified output directory.
-
-        Args:
-            train_dataset: A dataset object (e.g., a Hugging Face Dataset or PyTorch Dataset)
-                           containing the training examples.
-            val_dataset: A dataset object (e.g., a Hugging Face Dataset or PyTorch Dataset)
-                           containing the validation examples.
-            output_dir (str): Directory path where the fine-tuned model and logs will be saved.
-            epochs (int): Number of training epochs.
-            batch_size (int): Training batch size per device.
-            learning_rate (float): Learning rate for training.
-            weight_decay (float): Weight decay to apply during training.
-            eval_strategy (str): Evaluation strategy to use (e.g., "epoch", "steps").
-            save_strategy (str): Save strategy for checkpointing (e.g., "epoch", "steps").
-            logging_steps (int): Number of steps between logging outputs.
-        """
-        # Tokenize the dataset if not already tokenized
-        if "input_ids" not in train_dataset.features:
-            train_dataset = train_dataset.map(self.tokenize_function, batched=True, remove_columns=["text"])
-
-        if "input_ids" not in val_dataset.features:
-            val_dataset = val_dataset.map(self.tokenize_function, batched=True, remove_columns=["text"])
-
-        self.model = get_peft_model(self.model, lora_config)
-        self.model.print_trainable_parameters()
-
-        # Define training arguments for fine-tuning
-        training_args = TrainingArguments(
-            output_dir=output_dir,
-            num_train_epochs=epochs,
-            per_device_train_batch_size=batch_size,
-            learning_rate=learning_rate,
-            weight_decay=weight_decay,
-            eval_strategy=eval_strategy,
-            save_strategy=save_strategy,
-            load_best_model_at_end=True,
-            logging_steps=logging_steps,
-            logging_dir="./Logs",
-            remove_unused_columns=False,
-            report_to="none",  # Disable reporting to avoid excessive output
-        )
-
-        # Initialize the Trainer for fine-tuning
-        trainer = Trainer(
-            model=self.model,
-            args=training_args,
-            train_dataset=train_dataset,
-            eval_dataset=val_dataset,
-            processing_class=self.tokenizer,
-            data_collator=DataCollatorWithPadding(tokenizer=self.tokenizer),
-        )
-
-        # Execute the fine-tuning process
-        trainer.train()
-
-        self.save(output_dir, finetuned=True)
 
     def tokenize_function(self, examples: dict, max_length: int = 512) -> dict:
         """
@@ -273,11 +192,64 @@ class LLMModel:
             examples["text"],
             padding=True,
             truncation=True,
-            max_length=max_length,
+            max_length=max_length
         )
         tokenized_inputs["labels"] = tokenized_inputs["input_ids"].copy()
-
         return tokenized_inputs
+
+    def finetune(
+        self,
+        train_dataset,
+        val_dataset
+    ):
+        """
+        Fine-tune the base model on a provided training dataset.
+
+        This method leverages Hugging Face's Trainer API to perform fine-tuning.
+        After training, the fine-tuned model and tokenizer are saved to the specified output directory.
+        """
+        if len(train_dataset) == 0 or len(val_dataset) == 0:
+            return
+
+        # Tokenize the training and validation datasets
+        if "input_ids" not in train_dataset.features:
+            train_dataset = train_dataset.map(self.tokenize_function, batched=True, remove_columns=["text"])
+
+        if "input_ids" not in val_dataset.features:
+            val_dataset = val_dataset.map(self.tokenize_function, batched=True, remove_columns=["text"])
+
+        self.model = get_peft_model(self.model, self.config.finetune_lora_config)
+        self.model.print_trainable_parameters()
+
+        # Define training arguments for fine-tuning
+        training_args = TrainingArguments(
+            output_dir=self.config.model_path,
+            num_train_epochs=self.config.finetune_epochs,
+            per_device_train_batch_size=self.config.finetune_batch_size,
+            learning_rate=self.config.finetune_learning_rate,
+            weight_decay=self.config.finetune_weight_decay,
+            eval_strategy=self.config.finetune_eval_strategy,
+            save_strategy=self.config.finetune_save_strategy,
+            load_best_model_at_end=True,
+            logging_steps=self.config.finetune_logging_steps,
+            logging_dir="./Logs",
+            remove_unused_columns=False,
+            report_to="none"
+        )
+
+        trainer = Trainer(
+            model=self.model,
+            args=training_args,
+            train_dataset=train_dataset,
+            eval_dataset=val_dataset,
+            processing_class=self.tokenizer,
+            data_collator=DataCollatorWithPadding(tokenizer=self.tokenizer)
+        )
+
+        # Execute the fine-tuning process
+        trainer.train()
+
+        self.save(self.config.model_path, finetuned=True)
 
     def save(self, path: str, finetuned: bool = False) -> None:
         """
@@ -302,24 +274,21 @@ class LLMModel:
         config = AutoConfig.from_pretrained(path)
         
         if finetuned:
-            base_model_name = getattr(config, "base_model_name_or_path", self.config.model_name)
-            base_model = AutoModelForCausalLM.from_pretrained(base_model_name, config=config).to(self.config.device)
+            base_model = AutoModelForCausalLM.from_pretrained(self.config.model_name, config=config).to(self.device)
             self.model = PeftModel.from_pretrained(base_model, path)
         else:
-            self.model = AutoModelForCausalLM.from_pretrained(path, config=config).to(self.config.device)
+            self.model = AutoModelForCausalLM.from_pretrained(path, config=config).to(self.device)
             
         self.tokenizer.truncation_side = "left"
         self.model.eval()
         logger.info(f"Model loaded from {path}: {self.config.model_name}" + (" [FINETUNED]" if finetuned else ""))
 
 if __name__ == "__main__":
-    model = LLMModel(LLMConfig())
+    config = load_json_config("config.json").get("llm_config")
+    model = LLMModel(LLMConfig(config))
 
-    # Fine-tune the model
-    train_dataset = Dataset.from_list([{"text": text} for text in ['Example']])
-    val_dataset = Dataset.from_list([{"text": text} for text in ['Example']])
+    train_dataset = Dataset.from_list([{"text": text} for text in ["Example"]])
+    val_dataset = Dataset.from_list([{"text": text} for text in ["Example"]])
 
-    if len(train_dataset) > 0 and len(val_dataset) > 0:
-        model.finetune(train_dataset, val_dataset, epochs=1)
-    
-    model.load("./Model", finetuned=True)
+    model.finetune(train_dataset, val_dataset)
+    model.load(config.get("model_path"), finetuned=True)

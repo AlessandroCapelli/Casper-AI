@@ -20,7 +20,8 @@
     "module": "ES2022",
     "types": [],
     "noUnusedLocals": true,
-    "noUnusedParameters": true
+    "noUnusedParameters": true,
+	"resolveJsonModule": true
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
@@ -32,7 +33,6 @@
     "src/main.ts"
   ],
   "include": [
-    "src/**/*.ts",
-	"environment.ts"
+    "src/**/*.ts"
   ]
 }

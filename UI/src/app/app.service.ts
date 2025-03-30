@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { environment } from '../../environment';
+import * as config from '../../../config.json';
 
 export interface ChatMessage {
 	sender: 'User' | 'Assistant' | 'Error';
@@ -11,7 +11,7 @@ export interface ChatResponse {
 	reply: string;
 }
 
-const API_URL = `${environment.apiUrl}/chat`;
+const API_URL = `${config['frontend_config']['api_url']}/chat`;
 
 @Injectable({ providedIn: 'root' })
 export class Service {
